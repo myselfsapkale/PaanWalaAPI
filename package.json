@@ -1,0 +1,29 @@
+{
+  "name": "paanwalaapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "npx tsc --noEmit && npx tsx src/index.ts",
+    "dev": "npx tsx --watch --env-file .env.development src/index.ts",
+    "dev:staging": "npx tsx --watch --env-file .env.staging src/index.ts",
+    "dev:prod": "npx tsx --watch --env-file .env.production src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "nodemon": "^3.1.14"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.5",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}
