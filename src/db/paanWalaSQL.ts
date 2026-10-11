@@ -22,8 +22,6 @@ export async function connectDB(): Promise<void> {
     try {
         connection = await pool.getConnection();
         await connection.ping();
-    } catch (error: unknown) {
-        throw error;
     } finally {
         connection?.release();
     }

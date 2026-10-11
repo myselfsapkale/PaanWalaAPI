@@ -2,6 +2,8 @@ import { pool } from "../db/paanWalaSQL.ts";
 
 import { redisPool } from "../db/paanWalaRedis.ts";
 
+import { mongoClient } from "../db/paanWalaMongo.ts";
+
 // When server will close then we will remove below dependencies
 export const dependencies = [
     async () => {
@@ -11,9 +13,11 @@ export const dependencies = [
 
     async () => {
         await redisPool.close();
-        console.log("Redis pool is closed");
+        console.log("Redis pool closed");
     },
-    
-    // Add other dependency cleanup functions here.
-    // Example: Redis, message queues, background workers.
+
+    async () => {
+        await mongoClient.close();
+        console.log("MongoDB connection pool closed.");
+    },
 ];

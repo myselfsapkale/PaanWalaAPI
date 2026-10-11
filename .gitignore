@@ -5,3 +5,4 @@
 # Environment files will be ignored
 .env.development
 .env.staging
+.env.production

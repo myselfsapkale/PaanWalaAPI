@@ -9,7 +9,15 @@
     "start": "npx tsc --noEmit && npx tsx src/index.ts",
     "dev": "npx tsx --watch --env-file envs/.env.development src/index.ts",
     "dev:staging": "npx tsx --watch --env-file envs/.env.staging src/index.ts",
-    "dev:prod": "npx tsx --watch --env-file envs/.env.production src/index.ts"
+    "dev:prod": "npx tsx --watch --env-file envs/.env.production src/index.ts",
+    "lint": "npx eslint .",
+    "lint:fix": "npx eslint . --fix",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix"
+    ]
   },
   "keywords": [],
   "author": "",
@@ -18,14 +26,23 @@
   "dependencies": {
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
+    "mongodb": "^7.7.0",
     "mysql2": "^3.24.5",
     "nodemon": "^3.1.14",
-    "redis": "^6.3.0"
+    "redis": "^6.3.0",
+    "winston": "^3.19.0",
+    "winston-transport": "^4.9.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tsconfig/node24": "^24.0.5",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
-    "typescript": "^7.0.2"
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "eslint": "^10.12.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.71.1"
   }
 }

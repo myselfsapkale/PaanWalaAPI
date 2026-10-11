@@ -10,6 +10,8 @@ import { connectRedis } from "./db/paanWalaRedis.ts";
 
 import { dependencies } from "./consts/dependencies.const.ts";
 
+import { connectMongoDB } from "./db/paanWalaMongo.ts";
+
 const app = express();
 
 const port = process.env.PORT ?? "9001";
@@ -17,6 +19,10 @@ const port = process.env.PORT ?? "9001";
 let server: ReturnType<typeof app.listen> | undefined;
 
 let isShuttingDown = false;
+
+app.use(express.json({ limit: '16kb' }));
+
+app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 
 app.use(router);
 
@@ -69,6 +75,9 @@ async function startServer(): Promise<void> {
 
         await connectRedis();
         console.log("Redis connected successfully");
+
+        await connectMongoDB();
+        console.log("MongoDB connected successfully")
 
         server = app.listen(port, () => {
             console.log(`PaanWala app listening on port ${port}`);

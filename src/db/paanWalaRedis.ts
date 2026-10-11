@@ -6,7 +6,7 @@ export const redisPool = createClientPool(
         url: process.env.REDIS_URL ?? "redis://127.0.0.1:6379",
     },
     {
-        minimum: 2,
+        minimum: Number(process.env.REDIS_CONNECTION_MINIMUM),
         maximum: Number(process.env.REDIS_CONNECTION_LIMIT),
     }
 );
