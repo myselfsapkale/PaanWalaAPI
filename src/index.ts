@@ -10,6 +10,8 @@ import { connectRedis } from "./db/paanWalaRedis.ts";
 
 import { dependencies } from "./consts/dependencies.const.ts";
 
+import { connectMongoDB } from "./db/paanWalaMongo.ts";
+
 const app = express();
 
 const port = process.env.PORT ?? "9001";
@@ -69,6 +71,9 @@ async function startServer(): Promise<void> {
 
         await connectRedis();
         console.log("Redis connected successfully");
+
+        await connectMongoDB();
+        console.log("MongoDB connected successfully")
 
         server = app.listen(port, () => {
             console.log(`PaanWala app listening on port ${port}`);

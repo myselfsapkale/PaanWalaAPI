@@ -18,6 +18,7 @@
   "dependencies": {
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
+    "mongodb": "^7.7.0",
     "mysql2": "^3.24.5",
     "nodemon": "^3.1.14",
     "redis": "^6.3.0"
