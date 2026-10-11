@@ -1,4 +1,5 @@
 // PORT=9001
+// ENVIRONMENT=development
 
 // # MySQL Related Env
 // MYSQL_HOST=localhost
