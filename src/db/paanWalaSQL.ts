@@ -27,4 +27,4 @@ export async function connectDB(): Promise<void> {
     } finally {
         connection?.release();
     }
-}
+};

@@ -6,6 +6,8 @@ import router from "./router.ts";
 
 import { connectDB } from "./db/paanWalaSQL.ts";
 
+import { connectRedis } from "./db/paanWalaRedis.ts";
+
 import { dependencies } from "./consts/dependencies.const.ts";
 
 const app = express();
@@ -64,6 +66,9 @@ async function startServer(): Promise<void> {
     try {
         await connectDB();
         console.log("MySQL connected successfully");
+
+        await connectRedis();
+        console.log("Redis connected successfully");
 
         server = app.listen(port, () => {
             console.log(`PaanWala app listening on port ${port}`);
