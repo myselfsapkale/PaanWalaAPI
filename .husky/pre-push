@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "Running TypeScript type check..."
+npx tsc --noEmit || exit 1
+
+echo "Running full build check..."
+npm run build || exit 1
+
+echo "Running full project linting..."
+npm run lint || exit 1
+
+echo "All pre-push checks passed successfully!"
