@@ -20,6 +20,10 @@ let server: ReturnType<typeof app.listen> | undefined;
 
 let isShuttingDown = false;
 
+app.use(express.json({ limit: '16kb' }));
+
+app.use(express.urlencoded({ extended: true, limit: '16kb' }));
+
 app.use(router);
 
 // Manually shutdown the server and dependencies Ex. MySQL Pool, Redis Connection
