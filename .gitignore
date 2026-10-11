@@ -1,0 +1,7 @@
+# No need to send build folder and node modules
+/dist
+/node_modules
+
+# Environment files will be ignored
+.env.development
+.env.staging
