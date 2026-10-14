@@ -5,7 +5,7 @@
 // MYSQL_HOST=localhost
 // MYSQL_USERNAME=root
 // MYSQL_PASSWORD=1234
-// MYSQL_DATABASE=PaanWala
+// MYSQL_DATABASE=paan_wala_mysql
 // MYSQL_CONNECTION_LIMIT=10
 // MYSQL_MAX_IDLE_CONNECTION=10
 // MYSQL_MAX_IDLE_TIMEOUT=10
@@ -24,3 +24,15 @@
 // MONGO_MIN_POOL_SIZE=2
 // MONGO_MAX_POOL_SIZE=10
 // MONGO_MAX_IDLE_TIMEOUT=60000
+
+// # Logger & ELK Stack Configuration
+// LOG_LEVEL=info
+// LOG_FILE_PATH=logs/app.log
+
+// # Elasticsearch Integration
+// ELASTICSEARCH_URL=http://127.0.0.1:9200
+// ELASTICSEARCH_INDEX_PREFIX=paanwala-logs
+
+// # Logstash Integration (TCP / Beats input)
+// LOGSTASH_HOST=127.0.0.1
+// LOGSTASH_PORT=5044

@@ -76,6 +76,8 @@ services:
     ports:
       - "5044:5044"
       - "9600:9600"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     networks:
       - app-net
     depends_on:
@@ -93,3 +95,4 @@ services:
       - app-net
     depends_on:
       - elasticsearch
+      

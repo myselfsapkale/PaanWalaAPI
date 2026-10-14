@@ -12,6 +12,8 @@ import { dependencies } from "./consts/dependencies.const.ts";
 
 import { connectMongoDB } from "./db/paanWalaMongo.ts";
 
+import logger from "./utils/elkLogger.util.ts";
+
 const app = express();
 
 const port = process.env.PORT ?? "9001";
@@ -70,6 +72,9 @@ process.once("SIGTERM", () => void shutdown("SIGTERM"));
 // Starting the server
 async function startServer(): Promise<void> {
     try {
+        await logger.connectLogstash();
+        console.log("Logger connected successfully");
+
         await connectDB();
         console.log("MySQL connected successfully");
 

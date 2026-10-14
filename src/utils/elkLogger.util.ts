@@ -41,6 +41,7 @@ class LogstashTcpTransport extends TransportStream {
     private connected = false;
     private buffer: string[] = [];
     private reconnectTimer?: NodeJS.Timeout;
+    private isExplicitlyClosed = false;
 
     constructor(opts: LogstashTransportOptions) {
         super(opts);
@@ -52,11 +53,11 @@ class LogstashTcpTransport extends TransportStream {
     }
 
     private initSocket(): void {
+        if (this.isExplicitlyClosed) return;
         this.socket.connect(this.port, this.host);
 
         this.socket.on('connect', () => {
             this.connected = true;
-            console.log('DEBUG: Connected to Logstash');
             while (this.buffer.length > 0) {
                 const chunk = this.buffer.shift();
                 if (chunk) {
@@ -67,17 +68,39 @@ class LogstashTcpTransport extends TransportStream {
 
         this.socket.on('error', (err: Error) => {
             this.connected = false;
-            console.error('DEBUG: Logstash connection error:', err.message);
+            // Suppress error log if explicitly closing down
+            if (!this.isExplicitlyClosed) {
+                console.error('DEBUG: Logstash connection error:', err.message);
+            }
         });
 
         this.socket.on('close', () => {
             this.connected = false;
 
-            console.log('DEBUG: Logstash connection closed, reconnecting in 5s...');
+            if (!this.isExplicitlyClosed) {
+                console.log('DEBUG: Logstash connection closed, reconnecting in 5s...');
+                this.reconnectTimer = setTimeout(() => {
+                    this.initSocket();
+                }, 5000);
+            }
+        });
+    }
 
-            this.reconnectTimer = setTimeout(() => {
-                this.socket.connect(this.port, this.host);
-            }, 5000);
+    public isConnected(): boolean {
+        return this.connected;
+    }
+
+    public async close(): Promise<void> {
+        this.isExplicitlyClosed = true;
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+        }
+        return new Promise((resolve) => {
+            this.socket.end(() => {
+                this.socket.destroy();
+                this.connected = false;
+                resolve();
+            });
         });
     }
 
@@ -105,7 +128,6 @@ class LogstashTcpTransport extends TransportStream {
         if (this.connected) {
             this.socket.write(json);
         } else {
-            // Buffer logs if disconnected (prevent memory bloat by capping buffer length if necessary)
             if (this.buffer.length < 1000) {
                 this.buffer.push(json);
             }
@@ -115,7 +137,63 @@ class LogstashTcpTransport extends TransportStream {
     }
 }
 
-// Extract user info and request metadata safely for Express 5
+// Instantiate the transport so we can reference it for health checks and closing
+const logstashTransport = new LogstashTcpTransport({
+    host: process.env.LOGSTASH_HOST || 'localhost',
+    port: Number(process.env.LOGSTASH_PORT) || 5044
+});
+
+// Winston logger instance configuration
+const logger: Logger = createLogger({
+    level: process.env.LOG_LEVEL || 'info',
+    format: format.combine(
+        format.timestamp(),
+        format.errors({ stack: true }),
+        format.json()
+    ),
+    transports: [
+        logstashTransport,
+        new transports.Console({
+            format: format.combine(
+                format.colorize(),
+                format.simple()
+            )
+        })
+    ],
+});
+
+// Async function to check whether Logstash is connected or not (analogous to connectDB)
+export async function connectLogstash(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        if (logstashTransport.isConnected()) {
+            return resolve();
+        }
+        // Give it a brief window or check status
+        const timeout = setTimeout(() => {
+            if (logstashTransport.isConnected()) {
+                resolve();
+            } else {
+                reject(new Error('Logstash connection timeout/unavailable'));
+            }
+        }, 3000);
+
+        // Check continuously until timeout or connection
+        const interval = setInterval(() => {
+            if (logstashTransport.isConnected()) {
+                clearInterval(interval);
+                clearTimeout(timeout);
+                resolve();
+            }
+        }, 100);
+    });
+}
+
+// Expose close method for server shutdown dependency arrays
+export const closeLogstash = async (): Promise<void> => {
+    await logstashTransport.close();
+};
+
+// Extract user info and request metadata safely for Express
 function extractReqInfo(req?: Request): RequestInfo {
     if (!req) {
         return {
@@ -129,19 +207,14 @@ function extractReqInfo(req?: Request): RequestInfo {
     }
 
     const body = req?.body as Record<string, unknown> | undefined;
-
     const token_user_id = (body?.token_user_id as string) ?? 'anonymous';
-
     const token_user_type = (body?.token_user_type as string) ?? 'anonymous';
-
     const correlation_id = (req.headers['nonce'] as string) ?? (req.headers['x-correlation-id'] as string) ?? 'N/A';
-
     const target = req.originalUrl ?? req.url ?? 'N/A';
-
     const method = req.method ?? 'N/A';
 
     let ip = req.ip || req.socket.remoteAddress || '0.0.0.0';
-    ip = ip.replace(/^::ffff:/, ''); // strip IPv6 prefix
+    ip = ip.replace(/^::ffff:/, '');
 
     return {
         token_user_id,
@@ -153,53 +226,27 @@ function extractReqInfo(req?: Request): RequestInfo {
     };
 }
 
-// Winston logger instance configuration
-const logger: Logger = createLogger({
-    level: process.env.LOG_LEVEL || 'info',
-    format: format.combine(
-        format.timestamp(),
-        format.errors({ stack: true }),
-        format.json()
-    ),
-    transports: [
-        new LogstashTcpTransport({
-            host: process.env.LOGSTASH_HOST || 'localhost',
-            port: Number(process.env.LOGSTASH_PORT) || 5044
-        }),
-        new transports.Console({
-            format: format.combine(
-                format.colorize(),
-                format.simple()
-            )
-        })
-    ],
-});
-
-// Checking is logging enabled or not
 const isLoggingEnabled = (): boolean => {
     const envFlag = process.env.ENABLE_LOGS;
-
-    if (!envFlag) return true; // Default to true if unset, or change based on your preference
-
+    if (!envFlag) return true;
     return envFlag.toLowerCase() !== 'false';
 };
 
 export default {
+    connectLogstash,
+    closeLogstash,
     info: (req: Request | null, message: string, meta: Record<string, unknown> = {}): void => {
         if (!isLoggingEnabled()) return;
-
         const reqInfo = extractReqInfo(req ?? undefined);
         logger.info(message, { meta: { ...meta, ...reqInfo } });
     },
-
     error: (req: Request | null, error: Error | string, message?: string): void => {
         if (!isLoggingEnabled()) return;
-
         const reqInfo = extractReqInfo(req ?? undefined);
 
         if (error instanceof Error) {
             const errorMessage = message
-                ? `${message} - Error: ${error.message} (${error.constructor.name})`
+                ? `${message} Error: ${error.message} (${error.constructor.name})`
                 : `${error.message} (${error.constructor.name})`;
 
             logger.error(errorMessage, {
@@ -210,17 +257,13 @@ export default {
             logger.error(message || error, { meta: { ...reqInfo } });
         }
     },
-
     warn: (req: Request | null, message: string, meta: Record<string, unknown> = {}): void => {
         if (!isLoggingEnabled()) return;
-
         const reqInfo = extractReqInfo(req ?? undefined);
         logger.warn(message, { meta: { ...meta, ...reqInfo } });
     },
-
     debug: (req: Request | null, message: string, meta: Record<string, unknown> = {}): void => {
         if (!isLoggingEnabled()) return;
-
         const reqInfo = extractReqInfo(req ?? undefined);
         logger.debug(message, { meta: { ...meta, ...reqInfo } });
     },
