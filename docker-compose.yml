@@ -8,6 +8,7 @@ volumes:
   mysql_data:
   mongodb_data:
   redis_data:
+  redisinsight_data:
   es_data:
   kibana_data:
 
@@ -51,6 +52,19 @@ services:
       - app-net
     volumes:
       - redis_data:/data
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight_service
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    networks:
+      - app-net
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      - redis
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
